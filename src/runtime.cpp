@@ -232,8 +232,9 @@ void queueEvent(Computer *comp, const event_provider& p, void* data) {
     comp->event_lock.notify_all();
 }
 
-int getNextEvent(lua_State *L, const std::string& filter) {
+int getNextEvent(lua_State *L, const std::string& filter, bool nonblocking) {
     Computer * computer = get_comp(L);
+    if (computer->eventQueue.empty() && !termHasEvent(computer) && nonblocking) return 0;
     if (computer->running != 1) return 0;
     computer->timeoutCheckCount = 0;
     std::string ev;

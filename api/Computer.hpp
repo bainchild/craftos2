@@ -87,6 +87,7 @@ struct Computer {
     void * cli_term; // A WINDOW object for CLI mode
     void * debugger = NULL; // A pointer to an attached debugger, or if this computer is a debugger, the debugger library object
     bool isDebugger = false; // Whether this computer is a debugger
+    bool nonblocking = false; // Do top level yields block when there are no events?
     int hookMask = 0; // The Lua bitmask of hooks to be executed on the computer
     bool hasBreakpoints = false; // Whether any breakpoints have been set
     bool shouldDeinitDebugger = false; // Whether the debugger has been detached and should be deallocated on the next hook run

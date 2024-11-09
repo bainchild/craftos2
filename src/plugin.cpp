@@ -193,6 +193,11 @@ void loadPlugins(Computer * comp) {
         loadingPlugin = api_name;
         if (!p.second.second->luaopenName.empty()) luaopen = (lua_CFunction)SDL_LoadFunction(p.second.first, p.second.second->luaopenName.c_str());
         else luaopen = (lua_CFunction)SDL_LoadFunction(p.second.first, ("luaopen_" + api_name).c_str());
+        if (!p.second.second->luaopenName.empty()) {
+            fprintf(stdout,"Loading plugin %s (%s)\n",api_name.c_str(),p.second.second->luaopenName.c_str());
+        } else {
+            fprintf(stdout,"Loading plugin %s (%s)\n",api_name.c_str(),("lua_open" + api_name).c_str());
+        }
         if (luaopen == NULL) {
             fprintf(stderr, "Error loading plugin %s: Missing API opener\n", api_name.c_str()); 
             lua_getglobal(comp->L, "_CCPC_PLUGIN_ERRORS");

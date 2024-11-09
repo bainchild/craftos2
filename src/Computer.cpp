@@ -12,6 +12,7 @@ extern "C" {
 #include <lualib.h>
 }
 #include <fstream>
+#include <Flossy/Flossy.hpp>
 #include <thread>
 #include <unordered_set>
 #include <configuration.hpp>
@@ -100,7 +101,8 @@ Computer::Computer(int i, bool debug): isDebugger(debug) {
     addVirtualMount(this, standaloneROM, "rom");
     if (debug) addVirtualMount(this, standaloneDebug, "debug");
 #else
-    if (!addMount(this, getROMPath() / "rom", "rom", ::config.romReadOnly)) { if (::config.standardsMode && term) { displayFailure(term, "Cannot mount ROM"); orphanedTerminals.insert(term); } else if (term) term->factory->deleteTerminal(term); throw std::runtime_error("Could not mount ROM"); }
+    std::string rom_mount_fail_msg = flossy::format("Could not mount ROM @ {}",(getROMPath()/"rom").u8string());
+    if (!addMount(this, getROMPath() / "rom", "rom", ::config.romReadOnly)) { if (::config.standardsMode && term) { displayFailure(term, rom_mount_fail_msg); orphanedTerminals.insert(term); } else if (term) term->factory->deleteTerminal(term); throw std::runtime_error(rom_mount_fail_msg); }
     if (debug) if (!addMount(this, getROMPath() / "debug", "debug", true)) { if (::config.standardsMode && term) { displayFailure(term, "Cannot mount ROM"); orphanedTerminals.insert(term); } else if (term) term->factory->deleteTerminal(term); throw std::runtime_error("Could not mount debugger ROM"); }
 #endif // STANDALONE_ROM
     // Mount custom directories from the command line
@@ -125,6 +127,7 @@ Computer::Computer(int i, bool debug): isDebugger(debug) {
         throw std::runtime_error("Could not create computer data directory: " + e.message());
     }
     config = new computer_configuration(_config);
+    nonblocking = false;
 }
 
 // Destructor
@@ -684,8 +687,8 @@ void runComputer(Computer * self, const path_t& bios_name, const std::string& bi
         while (status == LUA_YIELD && self->running == 1) {
             status = lua_resume(self->coro, NULL, narg);
             if (status == LUA_YIELD) {
-                if (lua_gettop(self->coro) && lua_isstring(self->coro, -1)) narg = getNextEvent(self->coro, tostring(self->coro, -1));
-                else narg = getNextEvent(self->coro, "");
+                if (lua_gettop(self->coro) && lua_isstring(self->coro, -1)) narg = getNextEvent(self->coro, tostring(self->coro, -1), self->nonblocking);
+                else narg = getNextEvent(self->coro, "", self->nonblocking);
             } else if (status != 0 && self->running == 1) {
                 // Catch runtime error
                 self->running = 0;

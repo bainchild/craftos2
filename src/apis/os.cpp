@@ -13,6 +13,14 @@
 #include "../runtime.hpp"
 #include "../util.hpp"
 
+static int os_setNonblocking(lua_State *L) {
+    lastCFunction = __func__;
+    Computer * computer = get_comp(L);
+    const bool active = lua_toboolean(L, 1);
+    computer->nonblocking = active;
+    return 0;
+}
+
 static int os_getComputerID(lua_State *L) { lastCFunction = __func__; lua_pushinteger(L, get_comp(L)->id); return 1; }
 
 static int os_getComputerLabel(lua_State *L) {
@@ -378,6 +386,7 @@ Special thanks:\n\
 }
 
 static luaL_Reg os_reg[] = {
+    {"setNonblocking", os_setNonblocking},
     {"getComputerID", os_getComputerID},
     {"computerID", os_getComputerID},
     {"getComputerLabel", os_getComputerLabel},

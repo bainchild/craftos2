@@ -51,7 +51,7 @@ fi
 # Check language
 AC_LANG([C++])
 CXXFLAGS="$CXXFLAGS -std=c++17"
-CPPFLAGS="$CPPFLAGS -Icraftos2-lua/include -I/usr/local/opt/openssl/include"
+CPPFLAGS="$CPPFLAGS -Icraftos2-lua/include -Iflossy/Include -I/usr/local/opt/openssl/include"
 LDFLAGS="$LDFLAGS -L/usr/local/opt/openssl/lib"
 AC_PROG_CC
 AC_PROG_CXX

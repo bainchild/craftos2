@@ -45,6 +45,11 @@ craftos2-lua:
 craftos2-lua/src/liblua$(LIBEXT): craftos2-lua
 	$(error Please build Lua for your platform inside the craftos2-lua directory. You can do this with `make -C craftos2-lua <platform>`, where <platform> is a platform listed with `make -C craftos2-lua`, usually linux or macosx.)
 
+flossy:
+	git submodule update --init --recursive
+
+# note: flossy is a header only library, and so does not need to be built.
+
 @OUT_TARGET@: craftos2-lua/src/liblua$(LIBEXT) $(OBJ) $(ODIR)/platform.o
 	echo " [LD]    $@"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -136,7 +141,10 @@ linux-plugin:
 
 clean: $(ODIR)
 	rm -f craftos
-	find obj -type f -not -name speaker_sounds.o -exec rm -f {} \;
+	find obj -type f -exec rm -f {} \;
+	# why was this perserved? caused build issues with
+	# missing symbols when linking
+	# find obj -type f -not -name speaker_sounds.o -exec rm -f {} \;
 
 rebuild: clean craftos
 

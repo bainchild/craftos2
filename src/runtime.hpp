@@ -42,7 +42,7 @@ extern bool listenerMode;
 extern std::mutex listenerModeMutex;
 extern std::condition_variable listenerModeNotify;
 
-extern int getNextEvent(lua_State* L, const std::string& filter);
+extern int getNextEvent(lua_State* L, const std::string& filter, bool nonblocking);
 extern void* queueTask(const std::function<void*(void*)>& func, void* arg, bool async = false);
 extern void runComputer(Computer * self, const path_t& bios_name, const std::string& bios_data = "");
 extern bool Computer_getEvent(Computer * self, SDL_Event* e);
