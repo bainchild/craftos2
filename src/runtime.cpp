@@ -233,15 +233,26 @@ void queueEvent(Computer *comp, const event_provider& p, void* data) {
 }
 
 int getNextEvent(lua_State *L, const std::string& filter, bool nonblocking) {
+    // printf("getNextEvent(%s,%d) (empty(): %d)\n",filter.c_str(),nonblocking,filter.empty());
     Computer * computer = get_comp(L);
-    if (computer->eventQueue.empty() && !termHasEvent(computer) && nonblocking) return 0;
     if (computer->running != 1) return 0;
     computer->timeoutCheckCount = 0;
+    if (nonblocking && computer->eventQueue.empty() && !termHasEvent(computer)) {
+        return 0;
+    };
     std::string ev;
     computer->getting_event = true;
     lua_State *param;
     if (computer->eventQueue.size() > QUEUE_LIMIT) fprintf(stderr, "Warning: Queue overflow on computer %d!\n", computer->id);
+    bool iterated = false;
     do {
+        if (nonblocking && iterated) {
+            // printf("should we break? %d || %d",filter.empty(),(ev==filter || ev=="terminate"));
+            if (!ev.empty() && (filter.empty() || (ev == filter || ev == "terminate"))) break;
+            computer->getting_event = false;
+            return 0;
+        };
+        iterated = true;
         if (!lua_checkstack(computer->paramQueue, 1)) luaL_error(L, "Could not allocate space for event");
         param = lua_newthread(computer->paramQueue);
         do {
@@ -265,21 +276,29 @@ int getNextEvent(lua_State *L, const std::string& filter, bool nonblocking) {
                     if (!lua_checkstack(computer->paramQueue, 1)) luaL_error(L, "Could not allocate space for event");
                     param = lua_newthread(computer->paramQueue);
                 }
+                // printf("ran more inner loop\n");
             }
             if (computer->eventQueue.empty()) {
+                if (nonblocking) {
+                    if (lua_gettop(computer->paramQueue) > 0) lua_remove(computer->paramQueue, 1);
+                    return 0;
+                }
                 std::mutex m;
                 std::unique_lock<std::mutex> l(m);
                 while (computer->running == 1 && !termHasEvent(computer)) 
                     computer->event_lock.wait_for(l, std::chrono::seconds(5), [computer]()->bool{return termHasEvent(computer) || computer->running != 1;});
                 if (computer->running != 1) return 0;
             }
+            // printf("ran inner loop\n");
         } while (computer->eventQueue.empty());
         ev = computer->eventQueue.front();
         computer->eventQueue.pop();
         if (!filter.empty() && ev != filter && ev != "terminate") lua_remove(computer->paramQueue, 1);
         lua_pop(computer->paramQueue, 1);
         std::this_thread::yield();
+        // printf("ran outer loop\n");
     } while (!filter.empty() && ev != filter && ev != "terminate");
+    // printf("finished outer loop\n");
     //printf("%zd\n", computer->eventQueue.size());
     if ((size_t)lua_gettop(computer->paramQueue) != computer->eventQueue.size() + 1) {
         fprintf(stderr, "Warning: Queue sizes are incorrect! Expect misaligned event parameters.\n");

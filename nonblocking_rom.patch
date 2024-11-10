@@ -1,0 +1,61 @@
+diff --git a/rom/apis/parallel.lua b/rom/apis/parallel.lua
+index 28aaf49..b70698b 100644
+--- a/rom/apis/parallel.lua
++++ b/rom/apis/parallel.lua
+@@ -46,7 +46,7 @@ local function runUntilLimit(_routines, _limit)
+         for n = 1, count do
+             local r = _routines[n]
+             if r then
+-                if tFilters[r] == nil or tFilters[r] == eventData[1] or eventData[1] == "terminate" then
++                if tFilters[r] == nil or tFilters[r] == eventData[1] or eventData[1] == "terminate" or eventData[1] == nil then
+                     local ok, param = coroutine.resume(r, table.unpack(eventData, 1, eventData.n))
+                     if not ok then
+                         error(param, 0)
+diff --git a/rom/modules/main/cc/internal/exception.lua b/rom/modules/main/cc/internal/exception.lua
+index edaf6e4..9fd43aa 100644
+--- a/rom/modules/main/cc/internal/exception.lua
++++ b/rom/modules/main/cc/internal/exception.lua
+@@ -85,7 +85,7 @@ local function try(func, ...)
+ 
+     while coroutine.status(co) ~= "dead" do
+         local event = table.pack(os.pullEventRaw(result[2]))
+-        if result[2] == nil or event[1] == result[2] or event[1] == "terminate" then
++        if result[2] == nil or event[1] == result[2] or event[1] == "terminate" or event[1] == nil then
+             result = table.pack(coroutine.resume(co, table.unpack(event, 1, event.n)))
+         end
+     end
+diff --git a/rom/programs/advanced/multishell.lua b/rom/programs/advanced/multishell.lua
+index 6fe1943..81f83d0 100644
+--- a/rom/programs/advanced/multishell.lua
++++ b/rom/programs/advanced/multishell.lua
+@@ -57,7 +57,7 @@ end
+ local function resumeProcess(nProcess, sEvent, ...)
+     local tProcess = tProcesses[nProcess]
+     local sFilter = tProcess.sFilter
+-    if sFilter == nil or sFilter == sEvent or sEvent == "terminate" then
++    if sFilter == nil or sFilter == sEvent or sEvent == "terminate" or sEvent == nil then
+         local nPreviousProcess = nRunningProcess
+         nRunningProcess = nProcess
+         term.redirect(tProcess.terminal)
+@@ -339,7 +339,7 @@ while #tProcesses > 0 do
+         resizeWindows()
+         redrawMenu()
+ 
+-    elseif sEvent == "char" or sEvent == "key" or sEvent == "key_up" or sEvent == "paste" or sEvent == "terminate" or sEvent == "file_transfer" then
++    elseif sEvent == "char" or sEvent == "key" or sEvent == "key_up" or sEvent == "paste" or sEvent == "terminate" or sEvent == "file_transfer" or sEvent == nil then
+         -- Basic input, just passthrough to current process
+         resumeProcess(nCurrentProcess, table.unpack(tEventData, 1, tEventData.n))
+         if cullProcess(nCurrentProcess) then
+diff --git a/rom/programs/shell.lua b/rom/programs/shell.lua
+index 9fc6382..05243cc 100644
+--- a/rom/programs/shell.lua
++++ b/rom/programs/shell.lua
+@@ -770,7 +770,7 @@ else
+                 event = { "term_resize", n = 1 } -- Nasty hack to force read() to redraw.
+             end
+ 
+-            if result == nil or event[1] == result or event[1] == "terminate" then
++            if result == nil or event[1] == result or event[1] == "terminate" or event[1] == nil then
+                 ok, result = coroutine.resume(co, table.unpack(event, 1, event.n))
+                 if not ok then error(result, 0) end
+             end
