@@ -55,6 +55,7 @@ extern "C" struct mouse_event_data {
     uint8_t button;
     uint8_t event;
     std::string side;
+    bool is_relative;
 };
 
 // An exception type that is thrown if a terminal fails to initialize.
@@ -157,8 +158,8 @@ public:
     std::list<uint8_t> mouseButtonOrder; // An ordered list of mouse buttons that have been pressed
 
     // The following fields are available in API version 10.4 and later.
-    mouse_event_data nextMouseMove = {0, 0, 0, 0, std::string()}; // Storage for the next mouse_move event if it was debounced
-    mouse_event_data lastMouse = {-1, -1, 0, 16, std::string()}; // Data about the last mouse event
+    mouse_event_data nextMouseMove = {0, 0, 0, 0, std::string(), false}; // Storage for the next mouse_move event if it was debounced
+    mouse_event_data lastMouse = {-1, -1, 0, 16, std::string(), false}; // Data about the last mouse event
     uint32_t mouseMoveDebounceTimer = 0; // A timer that fires when the next mouse movement event is ready
 
     // The following fields are available in API version 10.8 and later.

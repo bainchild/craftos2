@@ -662,10 +662,11 @@ static std::string mouse_move(lua_State *L, void* param) {
     lua_pushinteger(L, 1);
     lua_pushinteger(L, term->nextMouseMove.x);
     lua_pushinteger(L, term->nextMouseMove.y);
+    bool was_relative = term->nextMouseMove.is_relative;
     if (!term->nextMouseMove.side.empty()) lua_pushstring(L, term->nextMouseMove.side.c_str());
-    term->nextMouseMove = {0, 0, 0, 0, std::string()};
+    term->nextMouseMove = {0, 0, 0, 0, std::string(), false};
     term->mouseMoveDebounceTimer = SDL_AddTimer(config.mouse_move_throttle, mouseDebounce, new comp_term_pair {get_comp(L), term});
-    return "mouse_move";
+    return (was_relative ? "mouse_move_relative" : "mouse_move");
 }
 
 static Uint32 mouseDebounce(Uint32 interval, void* param) {
@@ -787,7 +788,7 @@ std::string termGetEvent(lua_State *L) {
                     break;
                 }
             } else lua_pushstring(L, side.c_str());
-            term->lastMouse = {x, y, e.button.button, 0, ""};
+            term->lastMouse = {x, y, e.button.button, 0, "", (bool)SDL_GetRelativeMouseMode()};
             term->mouseButtonOrder.push_back(e.button.button);
             lua_pushinteger(L, x);
             lua_pushinteger(L, y);
@@ -814,7 +815,7 @@ std::string termGetEvent(lua_State *L) {
                 else lua_pushinteger(L, e.button.button);
                 break;
             }
-            term->lastMouse = {x, y, e.button.button, 1, ""};
+            term->lastMouse = {x, y, e.button.button, 1, "", (bool)SDL_GetRelativeMouseMode()};
             term->mouseButtonOrder.remove(e.button.button);
             if (!(e.button.windowID == computer->term->id || config.monitorsUseMouseEvents)) {
                 lua_pop(L, 1);
@@ -869,14 +870,14 @@ std::string termGetEvent(lua_State *L) {
             if (button == SDL_BUTTON_MIDDLE) button = 3;
             else if (button == SDL_BUTTON_RIGHT) button = 2;
             if ((term->lastMouse.x == x && term->lastMouse.y == y && term->lastMouse.button == button && term->lastMouse.event == 2) || (config.standardsMode && button > 3)) return "";
-            term->lastMouse = {x, y, button, 2, ""};
+            term->lastMouse = {x, y, button, 2, "", (bool)SDL_GetRelativeMouseMode()};
             if (config.mouse_move_throttle > 0 && !e.motion.state) {
                 std::lock_guard<std::mutex> lock(term->mouseMoveLock);
                 if (term->mouseMoveDebounceTimer == 0) {
                     term->mouseMoveDebounceTimer = SDL_AddTimer(config.mouse_move_throttle, mouseDebounce, new comp_term_pair {computer, term});
-                    term->nextMouseMove = {0, 0, 0, 0, std::string()};
+                    term->nextMouseMove = {0, 0, 0, 0, std::string(), false};
                 } else {
-                    term->nextMouseMove = {x, y, 0, 1, (e.motion.windowID != computer->term->id && config.monitorsUseMouseEvents) ? side : ""};
+                    term->nextMouseMove = {x, y, 0, 1, (e.motion.windowID != computer->term->id && config.monitorsUseMouseEvents) ? side : "", (bool)SDL_GetRelativeMouseMode()};
                     return "";
                 }
             }
@@ -884,6 +885,7 @@ std::string termGetEvent(lua_State *L) {
             lua_pushinteger(L, x);
             lua_pushinteger(L, y);
             if (e.motion.windowID != computer->term->id && config.monitorsUseMouseEvents) lua_pushstring(L, side.c_str());
+            // printf("GetRelativeMouseMode(): %i\n",(int)SDL_GetRelativeMouseMode());
             return e.motion.state ? "mouse_drag" : (SDL_GetRelativeMouseMode() ? "mouse_move_relative" : "mouse_move");
 #if SDL_VERSION_ATLEAST(2, 0, 12)
         } else if ((e.type == SDL_FINGERDOWN || e.type == SDL_FINGERUP || e.type == SDL_FINGERMOTION) && (computer->config->isColor || computer->isDebugger) && (e.tfinger.windowID == computer->term->id || config.monitorsUseMouseEvents)) {
@@ -1061,7 +1063,7 @@ std::string termGetEvent(lua_State *L) {
                 std::lock_guard<std::mutex> lock(((SDLTerminal*)term)->mouseMoveLock);
                 SDL_RemoveTimer(term->mouseMoveDebounceTimer);
                 term->mouseMoveDebounceTimer = 0;
-                term->nextMouseMove = {0, 0, 0, 0, std::string() };
+                term->nextMouseMove = {0, 0, 0, 0, std::string(), false};
             }
             lua_pushinteger(L, 1);
             lua_pushnil(L);

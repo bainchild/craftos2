@@ -12,7 +12,7 @@ LIBEXT=.dylib
 endif
 endif
 endif
-LIBS=craftos2-lua/src/liblua$(LIBEXT) @LIBS@
+LIBS=-lcraftos2-lua @LIBS@
 ifndef OS
 ifeq (@OUT_TARGET@, craftos)
 ifeq ($(shell uname), Darwin)
@@ -42,7 +42,7 @@ all: $(ODIR) @OUT_TARGET@
 craftos2-lua:
 	git submodule update --init --recursive
 
-craftos2-lua/src/liblua$(LIBEXT): craftos2-lua
+libcraftos2-lua$(LIBEXT): craftos2-lua
 	$(error Please build Lua for your platform inside the craftos2-lua directory. You can do this with `make -C craftos2-lua <platform>`, where <platform> is a platform listed with `make -C craftos2-lua`, usually linux or macosx.)
 
 flossy:

@@ -79,8 +79,8 @@ struct Computer {
     int timeoutCheckCount = 0; // The number of seconds the computer has attempted to terminate a long-running task
     bool getting_event = false; // Whether the computer is currently waiting for an event
     bool lastResizeEvent = false; // Whether the last event sent was a resize event (no longer used)
-    mouse_event_data nextMouseMove = {0, 0, 0, 0, std::string()}; // Storage for the next mouse_move event if it was debounced (deprecated - no longer used as of v2.5.6)
-    mouse_event_data lastMouse = {-1, -1, 0, 16, std::string()}; // Data about the last mouse event (deprecated - no longer used as of v2.5.6)
+    mouse_event_data nextMouseMove = {0, 0, 0, 0, std::string(), false}; // Storage for the next mouse_move event if it was debounced (deprecated - no longer used as of v2.5.6)
+    mouse_event_data lastMouse = {-1, -1, 0, 16, std::string(), false}; // Data about the last mouse event (deprecated - no longer used as of v2.5.6)
     SDL_TimerID mouseMoveDebounceTimer = 0; // A timer that fires when the next mouse movement event is ready (deprecated - no longer used as of v2.5.6)
     int waitingForTerminate = 0; // A bitmask of termination shortcuts that have been held
     void * cli_panel; // A PANEL object for CLI mode

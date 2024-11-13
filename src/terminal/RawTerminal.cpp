@@ -292,7 +292,7 @@ void sendRawEvent(SDL_Event e) {
                 else button = e.button.button;
                 break;
         }
-        term->lastMouse = {x, y, e.button.button, 0, ""};
+        term->lastMouse = {x, y, e.button.button, 0, "", (bool)SDL_GetRelativeMouseMode()};
         term->mouseButtonOrder.push_back(e.button.button);
         sendRawData(CCPC_RAW_MOUSE_DATA, rawClientTerminalIDs[e.window.windowID], [button, x, y](std::ostream &output) {
             output.put(0);
@@ -319,7 +319,7 @@ void sendRawEvent(SDL_Event e) {
                 else button = e.button.button;
                 break;
         }
-        term->lastMouse = {x, y, e.button.button, 1, ""};
+        term->lastMouse = {x, y, e.button.button, 1, "", (bool)SDL_GetRelativeMouseMode()};
         term->mouseButtonOrder.remove(e.button.button);
         sendRawData(CCPC_RAW_MOUSE_DATA, rawClientTerminalIDs[e.window.windowID], [button, x, y](std::ostream &output) {
             output.put(1);
@@ -364,7 +364,7 @@ void sendRawEvent(SDL_Event e) {
         if (button == SDL_BUTTON_MIDDLE) button = 3;
         else if (button == SDL_BUTTON_RIGHT) button = 2;
         if ((term->lastMouse.x == x && term->lastMouse.y == y && term->lastMouse.button == button && term->lastMouse.event == 2) || (config.standardsMode && button > 3)) return;
-        term->lastMouse = {x, y, button, 2, ""};
+        term->lastMouse = {x, y, button, 2, "", (bool)SDL_GetRelativeMouseMode()};
         sendRawData(CCPC_RAW_MOUSE_DATA, rawClientTerminalIDs[e.window.windowID], [button, x, y](std::ostream &output) {
             output.put(3);
             output.put(button);
