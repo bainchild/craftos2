@@ -128,6 +128,7 @@ Computer::Computer(int i, bool debug): isDebugger(debug) {
     }
     config = new computer_configuration(_config);
     nonblocking = false;
+    eventMask = {};
 }
 
 // Destructor

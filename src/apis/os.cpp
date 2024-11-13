@@ -21,6 +21,38 @@ static int os_setNonblocking(lua_State *L) {
     return 0;
 }
 
+static int os_getNonblocking(lua_State *L) {
+    lastCFunction = __func__;
+    Computer * computer = get_comp(L);
+    lua_pushboolean(L, computer->nonblocking);
+    return 1;
+}
+
+static int os_maskEvent(lua_State *L) {
+    lastCFunction = __func__;
+    Computer * computer = get_comp(L);
+    const std::string ev = tostring(L, 1, "");
+    bool not_found = !(std::find(computer->eventMask.begin(), computer->eventMask.end(), ev) != computer->eventMask.end());
+    lua_pushboolean(L, not_found);
+    if (not_found) {
+        computer->eventMask.push_back(ev);
+    }
+    return 1;
+}
+
+static int os_unmaskEvent(lua_State *L) {
+    lastCFunction = __func__;
+    Computer * computer = get_comp(L);
+    const std::string ev = tostring(L, 1, "");
+    auto itera = std::find(computer->eventMask.begin(), computer->eventMask.end(), ev);
+    bool found = (itera != computer->eventMask.end());
+    lua_pushboolean(L, found);
+    if (found) {
+        computer->eventMask.erase(itera);
+    }
+    return 1;
+}
+
 static int os_getComputerID(lua_State *L) { lastCFunction = __func__; lua_pushinteger(L, get_comp(L)->id); return 1; }
 
 static int os_getComputerLabel(lua_State *L) {
@@ -387,6 +419,9 @@ Special thanks:\n\
 
 static luaL_Reg os_reg[] = {
     {"setNonblocking", os_setNonblocking},
+    {"getNonblocking", os_getNonblocking},
+    {"maskEvent", os_maskEvent},
+    {"unmaskEvent", os_unmaskEvent},
     {"getComputerID", os_getComputerID},
     {"computerID", os_getComputerID},
     {"getComputerLabel", os_getComputerLabel},

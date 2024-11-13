@@ -259,6 +259,9 @@ int getNextEvent(lua_State *L, const std::string& filter, bool nonblocking) {
             while (termHasEvent(computer) && computer->eventQueue.size() < QUEUE_LIMIT) {
                 if (!lua_checkstack(param, 4)) fprintf(stderr, "Could not allocate event\n");
                 std::string name = termGetEvent(param);
+                if (std::find(computer->eventMask.begin(),computer->eventMask.end(),name) != computer->eventMask.end()) {
+                    continue;
+                }
                 if (!name.empty() && computer->eventHooks.find(name) != computer->eventHooks.end()) {
                     for (const auto& h : computer->eventHooks[name]) {
                         name = h.first(L, name, h.second);
