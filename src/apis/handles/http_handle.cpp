@@ -134,8 +134,8 @@ int http_handle_readByte(lua_State *L) {
     } else {
         const size_t c = lua_tointeger(L, 1);
         char * retval = new char[c];
-        handle->stream->read(retval, c);
-        lua_pushlstring(L, retval, c);
+        size_t count = handle->stream->readsome(retval, c);
+        lua_pushlstring(L, retval, count);
     }
     return 1;
 }
@@ -160,7 +160,8 @@ int http_handle_getResponseCode(lua_State *L) {
     http_handle_t * handle = *(http_handle_t**)lua_touserdata(L, lua_upvalueindex(1));
     if (handle == NULL) return luaL_error(L, "attempt to use a closed file");
     lua_pushinteger(L, handle->handle->getStatus());
-    return 1;
+    pushstring(L, handle->handle->getReason());
+    return 2;
 }
 
 int http_handle_getResponseHeaders(lua_State *L) {
@@ -169,9 +170,16 @@ int http_handle_getResponseHeaders(lua_State *L) {
     if (handle == NULL) return luaL_error(L, "attempt to use a closed file");
     lua_createtable(L, 0, handle->handle->size());
     for (const auto& h : *handle->handle) {
-        lua_pushstring(L, h.first.c_str());
-        lua_pushstring(L, h.second.c_str());
-        lua_settable(L, -3);
+        lua_getfield(L, -1, h.first.c_str());
+        if (lua_isstring(L, -1)) {
+            lua_pushliteral(L, ",");
+            lua_pushstring(L, h.second.c_str());
+            lua_concat(L, 3);
+        } else {
+            lua_pop(L, 1);
+            lua_pushstring(L, h.second.c_str());
+        }
+        lua_setfield(L, -2, h.first.c_str());
     }
     return 1;
 }

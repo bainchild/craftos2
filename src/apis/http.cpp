@@ -276,7 +276,7 @@ downloadThread_entry:
         else if (config.http_timeout > 0) session->setTimeout(Poco::Timespan(config.http_timeout * 1000));
         size_t requestSize = param->postData.size();
         for (const auto& h : param->headers) {request.add(h.first, h.second); requestSize += h.first.size() + h.second.size() + 1;}
-        if (isLocalhost) request.add("Host", "localhost");
+        if (isLocalhost) request.add("Host", "localhost:" + std::to_string(uri.getPort()));
         if (!request.has("User-Agent")) request.add("User-Agent", "computercraft/" CRAFTOSPC_CC_VERSION " CraftOS-PC/" CRAFTOSPC_VERSION);
         if (!request.has("Accept-Charset")) request.add("Accept-Charset", "UTF-8");
         if (!param->postData.empty()) {
@@ -497,10 +497,12 @@ static int http_request(lua_State *L) {
         lua_getfield(L, 1, "body");
         if (!lua_isnil(L, -1) && !lua_isstring(L, -1)) {delete param; return luaL_error(L, "bad field 'body' (string expected, got %s)", lua_typename(L, lua_type(L, -1)));}
         else if (lua_isstring(L, -1)) param->postData = tostring(L, -1);
+        else param->postData = "";
         lua_pop(L, 1);
         lua_getfield(L, 1, "method");
         if (!lua_isnil(L, -1) && !lua_isstring(L, -1)) {delete param; return luaL_error(L, "bad field 'method' (string expected, got %s)", lua_typename(L, lua_type(L, -1)));}
         else if (lua_isstring(L, -1)) param->method = tostring(L, -1);
+        else param->method = "";
         lua_pop(L, 1);
         lua_getfield(L, 1, "redirect");
         param->redirect = true;
@@ -756,6 +758,7 @@ static int http_removeListener(lua_State *L) {
 #endif
 
 extern int os_startTimer(lua_State *L);
+extern int os_cancelTimer(lua_State *L);
 
 struct ws_handle {
     bool isServer;
@@ -863,12 +866,22 @@ static int websocket_receive(lua_State *L) {
                 url = new std::string(lua_tostring(L, 2));
             }
             if (*ev == "websocket_message" && !ws->isServer && *url == ws->url) {
+                if (tm > 0) {
+                    lua_pushcfunction(L, os_cancelTimer);
+                    lua_pushinteger(L, tm);
+                    lua_call(L, 1, 0);
+                }
                 lua_pushvalue(L, 3);
                 lua_pushvalue(L, 4);
                 delete ev;
                 delete url;
                 return 2;
             } else if (*ev == "websocket_server_message" && ws->isServer && lua_touserdata(L, 2) == ws->clientID) {
+                if (tm > 0) {
+                    lua_pushcfunction(L, os_cancelTimer);
+                    lua_pushinteger(L, tm);
+                    lua_call(L, 1, 0);
+                }
                 lua_pushvalue(L, 3);
                 lua_pushvalue(L, 4);
                 delete ev;
@@ -882,6 +895,11 @@ static int websocket_receive(lua_State *L) {
                 delete url;
                 return 1;
             } else if (*ev == "terminate") {
+                if (tm > 0) {
+                    lua_pushcfunction(L, os_cancelTimer);
+                    lua_pushinteger(L, tm);
+                    lua_call(L, 1, 0);
+                }
                 delete ev;
                 delete url;
                 return luaL_error(L, "Terminated");
@@ -1341,6 +1359,11 @@ static int websocket_server_listen(lua_State *L) {
             if (lua_isnumber(L, 2)) {
                 int id = lua_tointeger(L, 2);
                 if (*ev == "websocket_server_connect" && id == f->srv->port()) {
+                    if (tm > 0) {
+                        lua_pushcfunction(L, os_cancelTimer);
+                        lua_pushinteger(L, tm);
+                        lua_call(L, 1, 0);
+                    }
                     lua_pushvalue(L, 3);
                     delete ev;
                     return 1;
@@ -1349,6 +1372,11 @@ static int websocket_server_listen(lua_State *L) {
                     delete ev;
                     return 1;
                 } else if (*ev == "terminate") {
+                    if (tm > 0) {
+                        lua_pushcfunction(L, os_cancelTimer);
+                        lua_pushinteger(L, tm);
+                        lua_call(L, 1, 0);
+                    }
                     delete ev;
                     return luaL_error(L, "Terminated");
                 }

@@ -22,13 +22,15 @@ extern "C" {
 #include <vector>
 #include <Poco/JSON/JSON.h>
 #include <Poco/JSON/Parser.h>
+#include <Poco/JSON/Object.h>
+#include <Poco/JSON/Array.h>
 #include <Poco/Net/HTTPResponse.h>
 #include <Computer.hpp>
 #include <Terminal.hpp>
 
-#define CRAFTOSPC_VERSION    "v2.8.3"
-#define CRAFTOSPC_CC_VERSION "1.112.0"
-#define CRAFTOSPC_INDEV      false
+#define CRAFTOSPC_VERSION    "v2.8.4"
+#define CRAFTOSPC_CC_VERSION "1.116.1"
+#define CRAFTOSPC_INDEV      true
 
 using path_t = std::filesystem::path;
 namespace fs = std::filesystem;
@@ -164,7 +166,7 @@ struct lua_State {
 };
 
 inline int log2i(int num) {
-    if (num == 0) return 0;
+    if (num <= 0) return 0;
     int retval;
     for (retval = 0; (num & 1) == 0; retval++) num = num >> 1;
     return retval;
@@ -186,6 +188,7 @@ inline std::string asciify(std::string str) {
 extern struct configuration config;
 extern std::unordered_map<std::string, std::pair<int, int> > configSettings;
 extern std::unordered_map<std::string, std::tuple<int, std::function<int(const std::string&, void*)>, void*> > userConfig;
+extern const wchar_t charsetConversion[256];
 
 extern std::string loadingPlugin;
 extern const char * lastCFunction;

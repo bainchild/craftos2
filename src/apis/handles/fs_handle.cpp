@@ -23,7 +23,7 @@
 #endif
 
 #ifdef __EMSCRIPTEN__
-EM_JS(void, syncfs, (), {
+EM_JS(void, emsyncfs, (), {
     if (window.fsIsSyncing) return;
     window.fsIsSyncing = true;
     FS.syncfs(false, function(err) {
@@ -44,7 +44,7 @@ int fs_handle_close(lua_State *L) {
     *fp = NULL;
     get_comp(L)->files_open--;
 #ifdef __EMSCRIPTEN__
-    queueTask([](void*)->void*{syncfs(); return NULL;}, NULL, true);
+    queueTask([](void*)->void*{emsyncfs(); return NULL;}, NULL, true);
 #endif
     return 0;
 }
@@ -60,7 +60,7 @@ int fs_handle_gc(lua_State *L) {
     *fp = NULL;
     get_comp(L)->files_open--;
 #ifdef __EMSCRIPTEN__
-    queueTask([](void*)->void*{syncfs(); return NULL;}, NULL, true);
+    queueTask([](void*)->void*{emsyncfs(); return NULL;}, NULL, true);
 #endif
     return 0;
 }
@@ -69,11 +69,15 @@ int fs_handle_readAll(lua_State *L) {
     lastCFunction = __func__;
     std::iostream * fp = *(std::iostream**)lua_touserdata(L, lua_upvalueindex(1));
     if (fp == NULL) return luaL_error(L, "attempt to use a closed file");
-    if (fp->eof()) return 0;
-    if (!fp->good()) luaL_error(L, "Could not read file");
+    if (fp->eof()) {
+        if (fp->tellg() < 1) return 0;
+        lua_pushliteral(L, "");
+        return 1;
+    }
+    if (fp->bad() || fp->fail()) return 0;
     const long pos = (long)fp->tellg();
     fp->seekg(0, std::ios::end);
-    if (!fp->good()) luaL_error(L, "Could not read file");
+    if (fp->bad() || fp->fail()) return 0;
     long size = (long)fp->tellg() - pos;
     char * retval = new char[size + 1];
     memset(retval, 0, size + 1);
@@ -166,8 +170,11 @@ int fs_handle_readAllByte(lua_State *L) {
     lastCFunction = __func__;
     std::iostream * fp = *(std::iostream**)lua_touserdata(L, lua_upvalueindex(1));
     if (fp == NULL) return luaL_error(L, "attempt to use a closed file");
-    if (fp->eof()) return 0;
-    if (!fp->good()) return luaL_error(L, "Could not read file");
+    if (fp->eof()) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+    if (fp->bad() || fp->fail()) return luaL_error(L, "Could not read file");
     std::streampos pos = fp->tellg();
     fp->seekg(0, std::ios_base::end);
     size_t size = fp->tellg() - pos;
@@ -244,7 +251,7 @@ int fs_handle_flush(lua_State *L) {
     if (fp == NULL) return luaL_error(L, "attempt to use a closed file");
     fp->flush();
 #ifdef __EMSCRIPTEN__
-    queueTask([](void*)->void*{syncfs(); return NULL;}, NULL, true);
+    queueTask([](void*)->void*{emsyncfs(); return NULL;}, NULL, true);
 #endif
     return 0;
 }
